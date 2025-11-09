@@ -1,47 +1,56 @@
-use crate::asterisk::event::ParserEvent;
+use macros::ParserEvent;
 
+pub mod agent;
 pub mod caller;
 pub mod member;
-pub mod agent;
 
 /// This struct represent one queue and its state
 /// Event: QueueParams
 ///
 /// Queue: queue name
 /// calls: active calls
-///
-#[derive(Debug)]
+#[derive(Debug, ParserEvent)]
 pub struct Params {
+    #[parser(key = "Queue")]
     queue: String,
+    
+    #[parser(use_parse, key = "Calls")]
     calls: u32,     // llamadas en cola
+    
+    #[parser(use_parse, key = "Holdtime")]
     hold_time: u64, //promedio de tiempo en espera
+    
+    #[parser(use_parse, key = "TalkTime")]
     talk_time: u64, // promedio de tiempo en conversacion
+    
+    #[parser(use_parse, key = "Completed")]
     completed: u32, // llamadas atendidas
+
+    #[parser(use_parse, key = "Abandoned")]
     abandoned: u32, // llamadas abandonadasq
 }
 
-impl ParserEvent for Params {
-    fn parse_from_map(data: std::collections::HashMap<&str, &str>) -> Self
-    where
-        Self: Sized,
-    {
-        Self {
-            queue: data.get("Queue").unwrap().to_string(),
-            calls: data.get("Calls").unwrap().parse().unwrap(),
-            hold_time: data.get("Holdtime").unwrap().parse().unwrap(),
-            talk_time: data.get("TalkTime").unwrap().parse().unwrap(),
-            completed: data.get("Completed").unwrap().parse().unwrap(),
-            abandoned: data.get("Abandoned").unwrap().parse().unwrap(),
-        }
-    }
-}
-
 // Caller in queue
-#[derive(Debug)]
+#[derive(Debug, ParserEvent)]
 pub struct Entry {
+    #[parser(key = "Queue")]
     queue: String,
-    caller_number: String,
+
+    #[parser(key = "CallerIDNum")]
+    caller_id_number: String,
+
+    #[parser(key = "CallerIDName")]
+    caller_id_name: String,
+
+    #[parser(key = "ConnectedLineNum")]
+    connected_line_num: String,
+
+    #[parser(key = "ConnectedLineName")]
+    connected_line_name: String,
+
+    #[parser(key = "Wait", use_parse)]
     wait: u64,
-    priprity: String,
-    unique_id: u32,
+
+    #[parser(key = "Uniqueid")]
+    unique_id: String,
 }

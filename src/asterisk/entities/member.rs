@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use crate::asterisk::event::ParserEvent;
+use macros::ParserEvent;
 
 ///
 /// Queue user information
@@ -7,45 +6,43 @@ use crate::asterisk::event::ParserEvent;
 ///
 /// Queue: queue name
 ///
-#[derive(Debug)]
+#[derive(Debug, ParserEvent)]
 pub struct QueueMember {
+    #[parser(key = "Queue")]
     queue: String,
-    interface: String,
-    member_name: String,
-    status: Status,
-    log_in_time: String,
-    last_call: u64,
-    last_pause: u64,
-    calls_taken: u16,
-    in_call: bool,
-    ring_in_use: bool,
-    pause_reason: String,
-    paused: bool,
-}
 
-impl ParserEvent for QueueMember {
-    fn parse_from_map(mut map: HashMap<&str, &str>) -> Self
-    where
-        Self: Sized,
-    {
-        Self {
-            queue: map.remove("Queue").unwrap().to_string(),
-            interface: map.remove("Interface").or_else(|| map.remove("StateInterface")).map(ToString::to_string).unwrap_or_default(),
-            log_in_time: map.remove("LoginTime").map(ToString::to_string).unwrap_or_default(),
-            last_pause: map.remove("LastPause").unwrap().parse().unwrap_or_default(),
-            calls_taken: map
-                .remove("CallsTaken")
-                .and_then(|x| x.parse().ok())
-                .unwrap_or_default(),
-            member_name: map.remove("MemberName").or_else(||map.remove("Name")).map(ToString::to_string).unwrap_or_default(),
-            last_call: map.remove("LastCall").unwrap().parse().unwrap_or_default(),
-            in_call: map.remove("InCall").map(|x| x == "1").unwrap_or_default(),
-            paused: map.remove("Paused").map(|x| x == "1").unwrap_or_default(),
-            ring_in_use: map.remove("Ringinuse").map(|x| x == "1").unwrap_or_default(),
-            status: map.remove("Status").unwrap().try_into().unwrap_or_default(),
-            pause_reason: map.remove("PausedReason").map(ToString::to_string).unwrap_or_default(),
-        }
-    }
+    #[parser(key = "Interface", key = "StateInterface")]
+    interface: String,
+
+    #[parser(key = "MemberName")]
+    member_name: String,
+
+    #[parser(key = "Status")]
+    status: Status,
+
+    #[parser(key = "LoginTime")]
+    log_in_time: String,
+
+    #[parser(key = "LastCall", use_parse)]
+    last_call: u64,
+
+    #[parser(key = "LastPause", use_parse)]
+    last_pause: u64,
+
+    #[parser(key = "CallsTaken", use_parse)]
+    calls_taken: u16,
+
+    #[parser(key = "InCall", use_parse)]
+    in_call: bool,
+
+    #[parser(key = "Ringinuse", use_parse)]
+    ring_in_use: bool,
+
+    #[parser(key = "PausedReason")]
+    pause_reason: String,
+
+    #[parser(key = "Paused", use_parse)]
+    paused: bool,
 }
 
 // Member status
@@ -63,25 +60,21 @@ enum Status {
     OnHold,
 }
 
-impl TryFrom<&str> for Status {
-    type Error = ();
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        
+impl From<&str> for Status {
+    fn from(value: &str) -> Self {
         match value {
-            "0" => Ok(Self::Unknown),
-            "1" => Ok(Self::NotInUse),
-            "2" => Ok(Self::InUse),
-            "3" => Ok(Self::Busy),
-            "4" => Ok(Self::Invalid),
-            "5" => Ok(Self::Unavailable),
-            "6" => Ok(Self::Ringing),
-            "7" => Ok(Self::RingingAndInUse),
-            "8" => Ok(Self::OnHold),
-            _ => Err(())
+            "1" => Self::NotInUse,
+            "2" => Self::InUse,
+            "3" => Self::Busy,
+            "4" => Self::Invalid,
+            "5" => Self::Unavailable,
+            "6" => Self::Ringing,
+            "7" => Self::RingingAndInUse,
+            "8" => Self::OnHold,
+            _ => Self::Unknown,
         }
     }
 }
-
 
 /// event: QueueMemberEingNoAnswer
 ///
@@ -92,13 +85,24 @@ impl TryFrom<&str> for Status {
 /// CallerIDNum:
 /// CallerIDName:
 /// Uniqueid:
-#[derive(Debug)]
-pub struct MemberRingnoanswer {
+#[derive(Debug, ParserEvent)]
+pub struct MemberRingninuse {
+    #[parser(key = "Queue")]
     queue: String,
+
+    #[parser(key = "Interface")]
     interface: String,
+
+    #[parser(key = "MemberName")]
     member_name: String,
+
+    #[parser(key = "Position", use_parse)]
     position: u16,
+
+    #[parser(key = "CallerId")]
     caller_id: String,
+
+    #[parser(key = "CallerName")]
     caller_name: String,
 }
 

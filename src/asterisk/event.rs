@@ -9,7 +9,12 @@ use tokio::{
     },
 };
 
-use crate::asterisk::entities::{Entry, Params, agent::{AgentCompleted, AgentConnect, AgenteCalled}, caller::Caller, member::*};
+use crate::asterisk::entities::{
+    Entry, Params,
+    agent::{AgentComplete, AgentConnect, AgentDump, AgentRingNoAnswer, AgenteCalled},
+    caller::Caller,
+    member::*,
+};
 
 pub struct EventHandler {
     reader: OwnedReadHalf,
@@ -199,15 +204,20 @@ pub enum QueueEvent {
     CallerLeave(Caller),
     CallerAbandon(Caller),
     CallerReconnect(Caller),
+
     Member(QueueMember),
     MemberStatus(QueueMember),
     MemberPaused(QueueMember),
     MemberAdded(QueueMember),
-    AgentCaller(AgenteCalled),
-    AgentConnect(AgentConnect),
     MemberRemoved(QueueMember),
-    MemberComplete(AgentCompleted),
-    MemberRingnoanswer, // si AMI tiene campos asociados, hacer struct
+    MemberRingninuse(MemberRingninuse),
+
+    AgentCalled(AgenteCalled),
+    AgentConnect(AgentConnect),
+    AgentComplete(AgentComplete),
+
+    AgentRingNoAnswer(AgentRingNoAnswer), // si AMI tiene campos asociados, hacer struct
+    AgentDump(AgentDump),
     MemberBusy,
 }
 
@@ -217,22 +227,28 @@ impl TryFrom<&str> for QueueEvent {
         let mut map = EventGenMap::gen_map(value);
 
         match map.remove("Event").unwrap_or_default() {
-            event_member if event_member.starts_with("QueueMember")=> Ok(Self::MemberStatus(QueueMember::parse_from_map(map))),
+            "QueueMemberStatus" => Ok(Self::MemberStatus(QueueMember::parse_from_map(map))),
             "QueueParams" => Ok(Self::Params(Params::parse_from_map(map))),
+            "AgentCalled" => Ok(Self::AgentCalled(AgenteCalled::parse_from_map(map))),
+            "AgentConnect" => Ok(Self::AgentConnect(AgentConnect::parse_from_map(map))),
+            "AgentComplete" => Ok(Self::AgentComplete(AgentComplete::parse_from_map(map))),
+            "AgentRingNoAnswer" => Ok(Self::AgentRingNoAnswer(AgentRingNoAnswer::parse_from_map(
+                map,
+            ))),
+            "AgentDump" => Ok(Self::AgentDump(AgentDump::parse_from_map(map))),
+            "QueueMemberPaused" => Ok(Self::MemberPaused(QueueMember::parse_from_map(map))),
+            "QueueMemberAdded" => Ok(Self::MemberAdded(QueueMember::parse_from_map(map))),
+            "QueueMemberRemoved" => Ok(Self::MemberRemoved(QueueMember::parse_from_map(map))),
+            "MemberRingninuse" => Ok(Self::MemberRingninuse(MemberRingninuse::parse_from_map(map))),
+            "QueueEntry" => Ok(Self::Entry(Entry::parse_from_map(map))),
             /*
-            "QueueEntry" => Ok(Self::Entry),
             "QueueStatusComplete" => Ok(Self::StatusComplete),
             "QueueCallerJoin" => Ok(Self::CallerJoin),
             "QueueCallerLeave" => Ok(Self::CallerLeave),
             "QueueCallerAbandon" => Ok(Self::CallerAbandon),
             "QueueCallerReconnect" => Ok(Self::CallerReconnect),
-            "QueueMemberPaused" => Ok(Self::MemberPaused),
-            "QueueMemberAdded" => Ok(Self::MemberAdded),
             "QueueMemberCaller" => Ok(Self::MemberCaller),
             "QueueMemberConnect" => Ok(Self::MemberConnect),
-            "QueueMemberRemoved" => Ok(Self::MemberRemoved),
-            "QueueMemberComplete" => Ok(Self::MemberComplete),
-            "QueueMemberRingnoanswer" => Ok(Self::MemberRingnoanswer),
             "QueueMemberBusy" => Ok(Self::MemberBusy),*/
             _ => Ok(Self::MemberBusy),
         }
@@ -242,6 +258,7 @@ impl TryFrom<&str> for QueueEvent {
 impl std::fmt::Display for QueueEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            QueueEvent::MemberRingninuse(_) => write!(f, "MemberRingninuse"),
             QueueEvent::Member(_) => write!(f, "QueueMember"),
             QueueEvent::Params(_) => write!(f, "QueueParams"),
             QueueEvent::Entry(_) => write!(f, "QueueEntry"),
@@ -253,12 +270,13 @@ impl std::fmt::Display for QueueEvent {
             QueueEvent::MemberPaused(_) => write!(f, "QueueMemberPaused"),
             QueueEvent::MemberStatus(_) => write!(f, "QueueMemberStatus"),
             QueueEvent::MemberAdded(_) => write!(f, "QueueMemberAdded"),
-            QueueEvent::AgentCaller(_) => write!(f, "QueueMemberCaller"),
-            QueueEvent::AgentConnect(_) => write!(f, "QueueMemberConnect"),
+            QueueEvent::AgentCalled(_) => write!(f, "AgentCalled"),
+            QueueEvent::AgentConnect(_) => write!(f, "AgentConnect"),
             QueueEvent::MemberRemoved(_) => write!(f, "QueueMemberRemoved"),
-            QueueEvent::MemberComplete(_) => write!(f, "QueueMemberComplete"),
-            QueueEvent::MemberRingnoanswer => write!(f, "QueueMemberRingnoanswer"),
+            QueueEvent::AgentComplete(_) => write!(f, "AgentComplete"),
+            QueueEvent::AgentRingNoAnswer(_) => write!(f, "AgentRingNoAnswer"),
             QueueEvent::MemberBusy => write!(f, "QueueMemberBusy"),
+            QueueEvent::AgentDump(_) => write!(f, "AgentDump"),
         }
     }
 }

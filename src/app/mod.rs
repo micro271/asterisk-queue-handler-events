@@ -1,4 +1,3 @@
-use iced::{Application, Settings};
 
 #[derive(Debug, Clone)]
 struct App {}
