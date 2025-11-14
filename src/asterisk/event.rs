@@ -190,7 +190,7 @@ enum InnerStateCheckToProcess {
 }
 
 impl InnerStateCheckToProcess {
-    fn is_to_continue(self) -> bool {
+    fn is_to_continue(&self) -> bool {
         matches!(self, InnerStateCheckToProcess::ToContinue)
     }
 }
@@ -219,7 +219,7 @@ pub enum AmiMessage {
 
     AgentRingNoAnswer(AgentRingNoAnswer), // si AMI tiene campos asociados, hacer struct
     AgentDump(AgentDump),
-    None
+    None,
 }
 
 impl TryFrom<&str> for AmiMessage {
